@@ -30,10 +30,9 @@ In order to test if your application is behaving correctly you can test it by ru
 ```
 $ ./test.sh path/to/application.bin
 
-> Running test 1 of 12...
-> Test passed.
-> Running test 2 of 12...
-> Test passed.
+> [TESTER] Running 14 test scenarios...
+> [TESTER] [1/14] Test 'MATCH - Valid max for each field' passed ✓
+> [TESTER] [2/14] Test 'MATCH - Case should be ignored' passed ✓
 ...
-> All tests passed successfully.
+> [TESTER] 100% of tests passed successfully!
 ```
