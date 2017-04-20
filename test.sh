@@ -4,19 +4,30 @@
 ############################## GENERAL FUNCTIONS ###############################
 ################################################################################
 
+RED='\033[31m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+BLUE='\033[34m'
+DEFAULT_COLOUR='\033[0m'
+
 output() {
-  local COLOUR='\033[0m' # Blue
-  local RESET='\033[0m'   # Standard
+  local COLOUR=${BLUE}
+  local RESET=${DEFAULT_COLOUR}   # Standard
   local LABEL='TESTER'
+  local MSG=${2}
   case ${1} in
-      ERROR) local COLOUR='\033[31m' ;; # Red
-    SUCCESS) local COLOUR='\033[32m' ;; # Green
-       WARN) local COLOUR='\033[33m' ;; # Yellow
-       INFO) local COLOUR='\033[34m' ;; # Blue
+      ERROR) local COLOUR=${RED}    ;; # Red
+    SUCCESS) local COLOUR=${GREEN}  ;; # Green
+       WARN) local COLOUR=${YELLOW} ;; # Yellow
+       INFO) local COLOUR=${BLUE}   ;; # Blue
   esac
-  while read LINE; do
-    echo -e "${COLOUR}[${LABEL}] ${LINE}${RESET}"
-  done
+  echo -e "${COLOUR}[${LABEL}] ${MSG}${RESET}"
+}
+
+error()
+{
+   output ERROR "${1}"
+   exit 1
 }
 
 ################################################################################
@@ -24,15 +35,13 @@ output() {
 ################################################################################
 
 # Ensure a script is specified
-if [[ -z ${1} ]]; then
-  echo 'No script specified to test!' | output ERROR
-  exit 1
-elif [[ ! -f ${1} ]]; then # Check script actually exists
-  echo 'The specified path does not exist!' | output ERROR
-  exit 1
-else
-  COMMAND=$1
-fi
+[ -z ${1} ] && error 'No script specified to test!'
+
+# Check script actually exists
+[ -f ${1} ] || error 'The specified path does not exist!'
+
+COMMAND=${1}
+echo $command
 
 ################################################################################
 ################################### TESTING ####################################
@@ -57,7 +66,7 @@ SCENARIOS+=('1:dc-servce-roles-c1A.domain.local:NO MATCH - Field 5 not numeric')
 SCENARIOS+=('1:dc-servce-roles-c01:NO MATCH - Not a valid FQDN')
 SCENARIOS+=('1:dc-servce-roles-c01.fail.local:NO MATCH - Not a valid domain')
 
-echo -e "Running ${#SCENARIOS[@]} test scenarios..." | output
+output INFO "Running ${#SCENARIOS[@]} test scenarios..."
 # Main loop to run through each test scenario
 for SCENARIO in "${SCENARIOS[@]}"; do
   ITEM=$((ITEM+1))
@@ -66,23 +75,17 @@ for SCENARIO in "${SCENARIOS[@]}"; do
   ARGUMENT=$(echo ${SCENARIO} | cut -d ':' -f 2)
   STATEMENT=$(echo ${SCENARIO} | cut -d ':' -f 3)
   # Run test scenario
-  $(bash $COMMAND $ARGUMENT)
+  ./${COMMAND} ${ARGUMENT}
   STATE=$?
   # Check exit status
-  if [[ ${DESIRED} == ${STATE} ]]; then
-    echo -e "[${ITEM}/${#SCENARIOS[@]}] Test '${STATEMENT}' passed \033[32m✓\033[0m" | output
-  else
-    echo -e "[${ITEM}/${#SCENARIOS[@]}] Test '${STATEMENT}' failed \033[31m✗\033[0m" | output WARN
-    FAIL=$((FAIL+1))
-  fi
+  [ ${DESIRED} -eq ${STATE} ] && \
+     output INFO "[${ITEM}/${#SCENARIOS[@]}] Test '${STATEMENT}' passed ${GREEN}✓${DEFAULT_COLOUR}" || \
+     ( output WARN "[${ITEM}/${#SCENARIOS[@]}] Test '${STATEMENT}' failed ${RED}✗${DEFAULT_COLOUR}"; FAIL=$((FAIL+1)) )
 done
 
 # Check to see if any failures were generated
-if [[ $FAIL -gt 0 ]]; then
-  PERCENT=$((200*${FAIL}/${#SCENARIOS[@]} % 2 + 100*${FAIL}/${#SCENARIOS[@]})) # Witchcraft
-  echo "$(tput bold)${PERCENT}% of tests failed to pass!$(tput sgr0)" | output ERROR
-  exit 1
-else
-  echo "$(tput bold) 100% of tests passed successfully!$(tput sgr0)" | output SUCCESS
-  exit 0
-fi
+PERCENT=$((200*${FAIL}/${#SCENARIOS[@]} % 2 + 100*${FAIL}/${#SCENARIOS[@]})) # Witchcraft
+[ $FAIL -gt 0 ] && \
+   error "$(tput bold)${PERCENT}% of tests failed to pass!$(tput sgr0)" || \
+   output INFO "$(tput bold) 100% of tests passed successfully!$(tput sgr0)"
+exit 0
