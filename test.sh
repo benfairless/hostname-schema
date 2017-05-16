@@ -1,18 +1,25 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 ################################################################################
 ############################## GENERAL FUNCTIONS ###############################
 ################################################################################
 
-RED='\033[31m'
-GREEN='\033[32m'
-YELLOW='\033[33m'
-BLUE='\033[34m'
-DEFAULT_COLOUR='\033[0m'
+#
+# Formating settings
+#  Colours
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+YELLOW=$(tput setaf 3)
+BLUE=$(tput setaf 4)
+#
+DEFAULT=$(tput sgr0)
+#
+BOLD=$(tput smso)
+OFFBOLD=$(tput rmso)
 
 output() {
   local COLOUR=${BLUE}
-  local RESET=${DEFAULT_COLOUR}   # Standard
+  local RESET=${DEFAULT}   # Standard
   local LABEL='TESTER'
   local MSG=${2}
   case ${1} in
@@ -79,13 +86,15 @@ for SCENARIO in "${SCENARIOS[@]}"; do
   STATE=$?
   # Check exit status
   [ ${DESIRED} -eq ${STATE} ] && \
-     output INFO "[${ITEM}/${#SCENARIOS[@]}] Test '${STATEMENT}' passed ${GREEN}✓${DEFAULT_COLOUR}" || \
-     ( output WARN "[${ITEM}/${#SCENARIOS[@]}] Test '${STATEMENT}' failed ${RED}✗${DEFAULT_COLOUR}"; FAIL=$((FAIL+1)) )
+     output INFO "[${ITEM}/${#SCENARIOS[@]}] Test '${STATEMENT}' passed ${GREEN}✓${DEFAULT}" || \
+     ( output WARN "[${ITEM}/${#SCENARIOS[@]}] Test '${STATEMENT}' failed ${RED}✗${DEFAULT}"; FAIL=$((FAIL+1)) )
 done
 
 # Check to see if any failures were generated
 PERCENT=$((200*${FAIL}/${#SCENARIOS[@]} % 2 + 100*${FAIL}/${#SCENARIOS[@]})) # Witchcraft
 [ $FAIL -gt 0 ] && \
-   error "$(tput bold)${PERCENT}% of tests failed to pass!$(tput sgr0)" || \
-   output INFO "$(tput bold) 100% of tests passed successfully!$(tput sgr0)"
+##   error "$(tput bold)${PERCENT}% of tests failed to pass!${DEFAULT}" || \
+##   output INFO "$(tput bold) 100% of tests passed successfully!$(tput sgr0)"
+   error "${BOLD}${PERCENT}% of tests failed to pass!${DEFAULT}" || \
+   output INFO "${BOLD} 100% of tests passed successfully!${DEFAULT}"
 exit 0
